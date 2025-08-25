@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #74ebd5, #9face6);
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    input {
+      padding: 10px;
+      width: 70%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #007BFF;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    .weather {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .weather img { width: 80px; }
+    .forecast {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .day {
+      background: #f9f9f9;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    .day:hover { transform: scale(1.05); }
+    .day img { width: 60px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🌤 Weather App</h2>
+    <input type="text" id="cityInput" placeholder="Enter city name">
+    <button onclick="getWeather()">Get Weather</button>
+    <div class="weather" id="weatherResult"></div>
+    <h3 style="margin-top:20px;">5-Day Forecast</h3>
+    <div class="forecast" id="forecastResult"></div>
+  </div>
+
+  <script>
+    const API_KEY = "320c92c2318a6eddb907caa755fbdc4a"; // your OpenWeather API key
+
+    async function getWeather() {
+      const city = document.getElementById("cityInput").value.trim();
+      if (!city) {
+        alert("Please enter a city name!");
+        return;
+      }
+
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("City not found");
+        const data = await response.json();
+
+        // Current weather card
+        document.getElementById("weatherResult").innerHTML = `
+          <h3>${data.name}, ${data.sys.country}</h3>
+          <img src="http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png" alt="icon">
+          <p>🌡 <b>${data.main.temp} °C</b> (feels like ${data.main.feels_like} °C)</p>
+          <p>💧 Humidity: ${data.main.humidity}%</p>
+          <p>🌥 Condition: ${data.weather[0].description}</p>
+          <p>🌬 Wind: ${data.wind.speed} m/s</p>
+        `;
+
+        // Load forecast
+        getForecast(city);
+
+      } catch (error) {
+        document.getElementById("weatherResult").innerHTML = `<p style="color:red;">${error.message}</p>`;
+        document.getElementById("forecastResult").innerHTML = "";
+      }
+    }
+
+    async function getForecast(city) {
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${API_KEY}`;
+      
+      try {
+        const response = await fetch(forecastUrl);
+        const data = await response.json();
+
+        if (!data.list) {
+          document.getElementById("forecastResult").innerHTML = "<p style='color:red;'>Forecast not available</p>";
+          return;
+        }
+
+        // Group by day, take first entry per day
+        let dailyForecasts = {};
+        data.list.forEach(entry => {
+          const date = new Date(entry.dt * 1000);
+          const day = date.toDateString();
+          if (!dailyForecasts[day]) {
+            dailyForecasts[day] = entry;
+          }
+        });
+
+        let forecastHTML = "";
+        Object.keys(dailyForecasts).slice(0, 5).forEach(day => {
+          const entry = dailyForecasts[day];
+          forecastHTML += `
+            <div class="day">
+              <h4>${day}</h4>
+              <img src="http://openweathermap.org/img/wn/${entry.weather[0].icon}@2x.png" alt="icon">
+              <p>🌡 ${entry.main.temp} °C</p>
+              <p>💧 ${entry.main.humidity}%</p>
+              <p>${entry.weather[0].description}</p>
+            </div>
+          `;
+        });
+
+        document.getElementById("forecastResult").innerHTML = forecastHTML;
+
+      } catch (error) {
+        document.getElementById("forecastResult").innerHTML = `<p style="color:red;">Forecast not available</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
