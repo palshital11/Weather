@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+      text-align: center;
+    }
+
+    .search-box {
+      display: flex;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 20px;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px 0 0 8px;
+      outline: none;
+    }
+
+    .search-box button {
+      padding: 10px 15px;
+      border: none;
+      background: #333;
+      color: white;
+      border-radius: 0 8px 8px 0;
+      cursor: pointer;
+    }
+
+    .weather {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .weather h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .forecast {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .day {
+      background: rgba(255, 255, 255, 0.8);
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .day:hover {
+      transform: scale(1.05);
+    }
+
+    .day h3 {
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 20px;
+      }
+
+      .search-box input {
+        font-size: 14px;
+      }
+
+      .day {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🌤 Weather Forecast</h1>
+  <div class="search-box">
+    <input type="text" id="cityInput" placeholder="Enter city name">
+    <button onclick="getWeather()">Search</button>
+  </div>
+
+  <div class="weather" id="currentWeather"></div>
+  <div class="forecast" id="forecast"></div>
+
+  <script>
+    const apiKey = "320c92c2318a6eddb907caa755fbdc4a"; // replace with your OpenWeather API key
+
+    async function getWeather() {
+      const city = document.getElementById("cityInput").value;
+      if (!city) {
+        alert("Please enter a city name");
+        return;
+      }
+
+      try {
+        // Current Weather
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
+        );
+        const weatherData = await weatherResponse.json();
+
+        if (weatherData.cod !== 200) {
+          alert(weatherData.message);
+          return;
+        }
+
+        document.getElementById("currentWeather").innerHTML = `
+          <h2>${weatherData.name}, ${weatherData.sys.country}</h2>
+          <p>🌡 ${weatherData.main.temp} °C</p>
+          <p>${weatherData.weather[0].description}</p>
+        `;
+
+        // 5-Day Forecast (every 24 hours, same time)
+        const forecastResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`
+        );
+        const forecastData = await forecastResponse.json();
+
+        const forecastDiv = document.getElementById("forecast");
+        forecastDiv.innerHTML = "";
+
+        // pick one forecast per day (12:00:00 time)
+        const dailyData = forecastData.list.filter(item =>
+          item.dt_txt.includes("12:00:00")
+        );
+
+        dailyData.forEach(day => {
+          const date = new Date(day.dt_txt);
+          forecastDiv.innerHTML += `
+            <div class="day">
+              <h3>${date.toDateString()}</h3>
+              <p>🌡 ${day.main.temp} °C</p>
+              <p>${day.weather[0].description}</p>
+            </div>
+          `;
+        });
+
+      } catch (err) {
+        console.error("Error fetching weather:", err);
+        alert("Failed to fetch weather. Try again later.");
+      }
+    }
+  </script>
+</body>
+</html>
