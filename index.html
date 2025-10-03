@@ -3,175 +3,203 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel = "icon" href = "logo.png"
-  <title>Weather App
-</title>
+  <title>Weather Forecast</title>
+  <link rel = "icon" href = "logo.png"
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
+    .weather-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto;
     }
-
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: linear-gradient(to right, #74ebd5, #ACB6E5);
-      min-height: 100vh;
-      padding: 20px;
+    .day-card {
+      transition: all 0.3s ease;
     }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #333;
-      text-align: center;
+    .day-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
-
-    .search-box {
-      display: flex;
-      width: 100%;
-      max-width: 400px;
-      margin-bottom: 20px;
-    }
-
-    .search-box input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 8px 0 0 8px;
-      outline: none;
-    }
-
-    .search-box button {
-      padding: 10px 15px;
-      border: none;
-      background: #333;
-      color: white;
-      border-radius: 0 8px 8px 0;
-      cursor: pointer;
-    }
-
-    .weather {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .weather h2 {
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-
-    .forecast {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      width: 100%;
-      max-width: 800px;
-    }
-
-    .day {
-      background: rgba(255, 255, 255, 0.8);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      text-align: center;
-      transition: transform 0.2s;
-    }
-
-    .day:hover {
-      transform: scale(1.05);
-    }
-
-    .day h3 {
-      margin-bottom: 8px;
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 20px;
-      }
-
-      .search-box input {
-        font-size: 14px;
-      }
-
-      .day {
-        padding: 10px;
-      }
+    .temp-display {
+      font-size: 2rem;
+      font-weight: bold;
     }
   </style>
 </head>
-<body>
-  <h1>🌤 Weather Forecast</h1>
-  <div class="search-box">
-    <input type="text" id="cityInput" placeholder="Enter city name">
-    <button onclick="getWeather()">Search</button>
+<body class="bg-gradient-to-r from-blue-200 to-indigo-200 min-h-screen">
+  <div id="app" class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center">
+          <i data-feather="cloud" class="mr-2"></i> 
+          Weather Forecast
+        </h1>
+        <p class="text-gray-600">Check the weather anywhere in the world</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div class="flex flex-col md:flex-row gap-4">
+          <input 
+            v-model="location" 
+            @keyup.enter="fetchWeather" 
+            type="text" 
+            placeholder="Enter city name" 
+            class="flex-grow px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+          <button 
+            @click="fetchWeather" 
+            class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
+          >
+            <i data-feather="search" class="mr-2"></i> Search
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Weather -->
+      <div v-if="currentWeather" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div class="text-center">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ currentWeather.name }}, {{ currentWeather.sys.country }}</h2>
+          <div class="flex items-center justify-center mb-4">
+            <div class="weather-icon">
+              <img :src="`http://openweathermap.org/img/wn/${currentWeather.weather[0].icon}@2x.png`" :alt="currentWeather.weather[0].description">
+            </div>
+            <div class="temp-display text-blue-600 ml-4">
+              {{ Math.round(currentWeather.main.temp) }}°C
+            </div>
+          </div>
+          <div class="text-gray-700 mb-2">
+            {{ currentWeather.weather[0].description | capitalize }}
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            <div class="bg-blue-50 p-3 rounded-lg">
+              <div class="text-sm text-blue-500 mb-1">Feels Like</div>
+              <div class="font-medium">{{ Math.round(currentWeather.main.feels_like) }}°C</div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg">
+              <div class="text-sm text-blue-500 mb-1">Humidity</div>
+              <div class="font-medium">{{ currentWeather.main.humidity }}%</div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg">
+              <div class="text-sm text-blue-500 mb-1">Wind</div>
+              <div class="font-medium">{{ currentWeather.wind.speed }} m/s</div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg">
+              <div class="text-sm text-blue-500 mb-1">Pressure</div>
+              <div class="font-medium">{{ currentWeather.main.pressure }} hPa</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5-Day Forecast -->
+      <div v-if="forecast.length" class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">5-Day Forecast</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div 
+            v-for="(day, index) in forecast" 
+            :key="index" 
+            class="day-card bg-gray-50 rounded-lg p-4 text-center hover:bg-blue-50"
+          >
+            <div class="text-lg font-medium text-gray-700 mb-2">{{ formatDate(day.dt_txt) }}</div>
+            <div class="weather-icon mb-2">
+              <img :src="`http://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png`" :alt="day.weather[0].description">
+            </div>
+            <div class="text-gray-700 mb-1">{{ day.weather[0].description | capitalize }}</div>
+            <div class="flex justify-center gap-3 text-sm">
+              <div class="text-blue-500">{{ Math.round(day.main.temp_max) }}°</div>
+              <div class="text-gray-400">{{ Math.round(day.main.temp_min) }}°</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="error" class="bg-red-50 border-l-4 border-red-500 p-4 mb-8">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <i data-feather="alert-triangle" class="text-red-500"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-red-700">{{ error }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="weather" id="currentWeather"></div>
-  <div class="forecast" id="forecast"></div>
-
   <script>
-    const apiKey = "320c92c2318a6eddb907caa755fbdc4a"; // replace with your OpenWeather API key
+    new Vue({
+      el: '#app',
+      data: {
+        location: '',
+        currentWeather: null,
+        forecast: [],
+        error: null,
+        apiKey: '320c92c2318a6eddb907caa755fbdc4a' // replace with your OpenWeather API key
+      },
+      methods: {
+        async fetchWeather() {
+          if (!this.location.trim()) {
+            this.error = 'Please enter a city name';
+            return;
+          }
 
-    async function getWeather() {
-      const city = document.getElementById("cityInput").value;
-      if (!city) {
-        alert("Please enter a city name");
-        return;
-      }
-
-      try {
-        // Current Weather
-        const weatherResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
-        );
-        const weatherData = await weatherResponse.json();
-
-        if (weatherData.cod !== 200) {
-          alert(weatherData.message);
-          return;
+          try {
+            this.error = null;
+            
+            // Fetch current weather
+            const weatherResponse = await fetch(
+              `https://api.openweathermap.org/data/2.5/weather?q=${this.location}&appid=${this.apiKey}&units=metric`
+            );
+            const weatherData = await weatherResponse.json();
+            
+            if (weatherData.cod !== 200) {
+              throw new Error(weatherData.message);
+            }
+            
+            this.currentWeather = weatherData;
+            
+            // Fetch forecast
+            const forecastResponse = await fetch(
+              `https://api.openweathermap.org/data/2.5/forecast?q=${this.location}&appid=${this.apiKey}&units=metric`
+            );
+            const forecastData = await forecastResponse.json();
+            
+            // Get one forecast per day at noon
+            this.forecast = forecastData.list.filter(item => 
+              item.dt_txt.includes('12:00:00')
+            ).slice(0, 5);
+            
+          } catch (err) {
+            this.error = err.message;
+            this.currentWeather = null;
+            this.forecast = [];
+          }
+        },
+        formatDate(dateStr) {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         }
-
-        document.getElementById("currentWeather").innerHTML = `
-          <h2>${weatherData.name}, ${weatherData.sys.country}</h2>
-          <p>🌡 ${weatherData.main.temp} °C</p>
-          <p>${weatherData.weather[0].description}</p>
-        `;
-
-        // 5-Day Forecast (every 24 hours, same time)
-        const forecastResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`
-        );
-        const forecastData = await forecastResponse.json();
-
-        const forecastDiv = document.getElementById("forecast");
-        forecastDiv.innerHTML = "";
-
-        // pick one forecast per day (12:00:00 time)
-        const dailyData = forecastData.list.filter(item =>
-          item.dt_txt.includes("12:00:00")
-        );
-
-        dailyData.forEach(day => {
-          const date = new Date(day.dt_txt);
-          forecastDiv.innerHTML += `
-            <div class="day">
-              <h3>${date.toDateString()}</h3>
-              <p>🌡 ${day.main.temp} °C</p>
-              <p>${day.weather[0].description}</p>
-            </div>
-          `;
-        });
-
-      } catch (err) {
-        console.error("Error fetching weather:", err);
-        alert("Failed to fetch weather. Try again later.");
+      },
+      filters: {
+        capitalize(value) {
+          if (!value) return '';
+          value = value.toString();
+          return value.charAt(0).toUpperCase() + value.slice(1);
+        }
+      },
+      mounted() {
+        feather.replace();
+        // Optional: Load default weather for a popular city
+        this.location = 'London';
+        this.fetchWeather();
+      },
+      updated() {
+        feather.replace();
       }
-    }
+    });
   </script>
 </body>
 </html>
-
